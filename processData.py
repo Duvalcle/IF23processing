@@ -1,6 +1,7 @@
 import serial
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 #import scipy
 
 # GPSMesssage=Year,Month,Day,DateAge,HourMinutesSecondes,TimeAge,Satellites,
@@ -19,15 +20,22 @@ import numpy as np
 #periode de 24h et quelques minutes faire les mesures toujours au meme moment de la journee
 
 
+###--- Acquisition ---###
+
 ser = serial.Serial('/dev/ttyUSB0', 9600)  # open serial port
 print(ser.name)         # check which port was really used
 #Variables used for recording
+bool_received = 0
 time_list = []
 hdop_list = []
 Longitude_list = []
 Latitude_list = []
 Altitude_list = []
+matrice_list =[]
 for line in ser:
+    if bool_received == 0:
+            print "Reception of Data ..."
+            bool_received = 1
     split_list = line.split(',')
     if split_list[0] != 'END\r\n':
         #'Y : ', split_list[0], 'M : ', split_list[1] ,'D : ', split_list[2],\
@@ -50,8 +58,40 @@ print 'Long :',Longitude_list
 print 'Lat :', Latitude_list
 print 'Alt :', Altitude_list
 print 'HDOP :',hdop_list
+###--- Processing ---###
+a = 6378137
+b = 6356752.314245179497563967
+f = 1/298.257223563
+epsilon = 0.00001
+e = np.sqrt(2*f - np.power(f,2.0))
 
-plt.plot(time_list, Altitude_list)
+lambda0 = (4+ 20/60 + 20/3600)*np.pi/180
+phi0 = (4+ 20/60 + 20/3600)*np.pi/180
+h0 = 0
+N0 = a/(np.sqrt(1-np.power(e,2)*np.power(np.sin(phi0),2)));
+M = np.matrix([[-np.sin(lambda0), np.cos(lambda0), 0], \
+ [-np.sin(phi0)*np.cos(lambda0), -np.sin(phi0)*np.sin(lambda0),  np.cos(phi0)], \
+ [np.cos(phi0)*np.cos(lambda0), np.cos(phi0)*np.sin(lambda0), np.sin(phi0)]])
+
+#transformation repere local
+def transfo_ellipse_xyz(vect):
+    #vect doit contenir Lambda, Phi, h
+    N = a/(np.sqrt(1-np.power(e,2)*np.power(np.sin(vect.item(1)),2.0)))
+    x = (N+vect.item(2))*np.cos(vect.item(1))*np.cos(vect.item(0))
+    y = (N+vect.item(2))*np.cos(vect.item(1))*np.sin(vect.item(0))
+    z = (N*(1-np.power(e,2))+vect.item(2))*np.sin(vect.item(1))
+    matrice = np.matrix([[x],[y],[z]])
+    return matrice
+def transfo_geo_local(vect):
+    Xl = M * np.matrix([[vect.item(0)-N0*np.cos(phi0)*np.cos(lambda0)], [vect.item(1)-N0*np.cos(phi0)*np.sin(lambda0)], [vect.item(2)-N0*(1-np.power(e,2))*np.sin(phi0)]])
+    return Xl
+for i in range(0,len(Longitude_list)):
+    matrice_list.append(np.matrix([[float(Longitude_list[i])],[float(Latitude_list[i])],[float(Altitude_list[i])]]))
+    matrice_list[i]=transfo_geo_local(transfo_ellipse_xyz(matrice_list[i]))
+
+print "Liste", matrice_list
+
+#plt.plot(time_list, Altitude_list)
 plt.plot(Longitude_list, Latitude_list,'+')
 plt.show()
 
