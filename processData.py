@@ -20,8 +20,9 @@ import math
 #periode de 24h et quelques minutes faire les mesures toujours au meme moment de la journee
 
 
-###--- Acquisition ---###
-
+###------------------------------------------------------------###
+###---                  Acquisition                         ---###
+###------------------------------------------------------------###
 ser = serial.Serial('/dev/ttyUSB0', 9600)  # open serial port
 print(ser.name)         # check which port was really used
 #Variables used for recording
@@ -53,12 +54,14 @@ for line in ser:
 
     else:
         break
-print 'T : ',time_list
-print 'Long :',Longitude_list
-print 'Lat :', Latitude_list
-print 'Alt :', Altitude_list
-print 'HDOP :',hdop_list
-###--- Processing ---###
+#print 'T : ',time_list
+#print 'Long :',Longitude_list
+#print 'Lat :', Latitude_list
+#print 'Alt :', Altitude_list
+#print 'HDOP :',hdop_list
+###------------------------------------------------------------###
+###---                  Processing                          ---###
+###------------------------------------------------------------###
 a = 6378137
 b = 6356752.314245179497563967
 f = 1/298.257223563
@@ -73,6 +76,11 @@ M = np.matrix([[-np.sin(lambda0), np.cos(lambda0), 0], \
  [-np.sin(phi0)*np.cos(lambda0), -np.sin(phi0)*np.sin(lambda0),  np.cos(phi0)], \
  [np.cos(phi0)*np.cos(lambda0), np.cos(phi0)*np.sin(lambda0), np.sin(phi0)]])
 
+xl_list = []
+yl_list = []
+zl_list = []
+
+
 #transformation repere local
 def transfo_ellipse_xyz(vect):
     #vect doit contenir Lambda, Phi, h
@@ -85,14 +93,46 @@ def transfo_ellipse_xyz(vect):
 def transfo_geo_local(vect):
     Xl = M * np.matrix([[vect.item(0)-N0*np.cos(phi0)*np.cos(lambda0)], [vect.item(1)-N0*np.cos(phi0)*np.sin(lambda0)], [vect.item(2)-N0*(1-np.power(e,2))*np.sin(phi0)]])
     return Xl
-for i in range(0,len(Longitude_list)):
-    matrice_list.append(np.matrix([[float(Longitude_list[i])],[float(Latitude_list[i])],[float(Altitude_list[i])]]))
-    matrice_list[i]=transfo_geo_local(transfo_ellipse_xyz(matrice_list[i]))
 
-print "Liste", matrice_list
+matrice_list.append(np.matrix([[float(Longitude_list[0])],[float(Latitude_list[0])],[float(Altitude_list[0])]]))
+matrice_list[0]=transfo_geo_local(transfo_ellipse_xyz(matrice_list[0]))
+matrice_cov=np.matrix([[matrice_list[0].item(0)],[matrice_list[0].item(1)],[matrice_list[0].item(2)]])
+xl_list.append(matrice_list[0].item(0))
+yl_list.append(matrice_list[0].item(1))
+zl_list.append(matrice_list[0].item(2))
+
+for i in range(1,len(Longitude_list)):
+    vector = np.matrix([[float(Longitude_list[i])],[float(Latitude_list[i])],[float(Altitude_list[i])]])
+    matrice_list.append(vector)
+    matrice_list[i]=transfo_geo_local(transfo_ellipse_xyz(matrice_list[i]))
+    xl_list.append(matrice_list[i].item(0))
+    yl_list.append(matrice_list[i].item(1))
+    zl_list.append(matrice_list[i].item(2))
+    matrice_cov = np.concatenate((matrice_cov,[[matrice_list[i].item(0)],[matrice_list[i].item(1)],[matrice_list[i].item(2)]]), axis=1)
+
+#ecart-type et variance et moyenne
+
+meanX = np.mean(xl_list)
+meanY = np.mean(yl_list)
+meanZ = np.mean(zl_list)
+ecarTypeX = np.std(xl_list)
+ecarTypeY = np.std(yl_list)
+ecarTypeZ = np.std(zl_list)
+
+print "X local: ", meanX
+print "Y local: ", meanY
+print "Z local: ", meanZ
+
+print "ecarTypeX :", ecarTypeX
+print "ecarTypeY s", ecarTypeY
+print "ecarTypeZ s", ecarTypeZ
+
+matrice_cov=np.cov(matrice_cov)
+print "Matrice de covariance :\n",matrice_cov
+#print "Liste", matrice_list
 
 #plt.plot(time_list, Altitude_list)
-plt.plot(Longitude_list, Latitude_list,'+')
+plt.plot(xl_list, yl_list,'+')
 plt.show()
 
 #ser.write(b'hello')     # write a string
