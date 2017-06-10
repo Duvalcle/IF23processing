@@ -40,7 +40,7 @@ h0 = 0
 N0 = a/(np.sqrt(1-np.power(e,2)*np.power(np.sin(phi0),2)));
 
 
-x2 = -2430601.289
+x2 = -2430601.829
 y2 = -4702442.706
 z2 = -3546587.345
 
@@ -52,6 +52,7 @@ print 'h = ', h
 #Transformation M(Lambda,Phi,h) => M(x,y,z)
 print 'Transfo => x,y,z'
 def transfo_ellipse_xyz(vect):
+    #vect doit contenir Lambda, Phi, h
     N = a/(np.sqrt(1-np.power(e,2)*np.power(np.sin(vect.item(1)),2)))
     x = (N+h)*np.cos(vect.item(1))*np.cos(vect.item(0))
     y = (N+h)*np.cos(vect.item(1))*np.sin(vect.item(0))
@@ -59,57 +60,59 @@ def transfo_ellipse_xyz(vect):
     matrice = np.matrix([[x],[y],[z]])
     return matrice
 
-print 'x,y,z = ', transfo_ellipse_xyz(vect_ellipse)
+vect_xyz = transfo_ellipse_xyz(vect_ellipse)
+print 'x,y,z = \n', vect_xyz
 
 
 #Transformation M(x,y,z) => M(Lambda,Phi,h)
 print 'Transfo 2 x,y,z => '
 
-def transfo_xyz_ellipse(x, y, z):
-    mlambda = np.arctan(y/x);
-    h2 = 0;
+def transfo_xyz_ellipse(vect):
+    #vect doit contenir x,y,z
+    mlambda = np.arctan2(vect.item(1),vect.item(0));
+    hi = 0;
     N2 = a;
-    p = np.sqrt(np.power(x,2)+np.power(y,2));
+    p = np.sqrt(np.power(vect.item(0),2)+np.power(vect.item(1),2));
 
-    sinusmphi = (z/(N2*(1-np.power(e,2))+h));
-    mphi = np.arctan((z+np.power(e,2)*N2*sinusmphi)/p);
+    sinusmphi = (vect.item(2)/(N2*(1-np.power(e,2))+hi));
+    mphi = np.arctan((vect.item(2)+np.power(e,2)*N2*sinusmphi)/p);
     N2 = a/(np.sqrt(1-np.power(e,2)*np.power(sinusmphi,2)));
     hi = (p/np.cos(mphi)) - N2;
     hprev = 0;
 
     while abs(hi-hprev) > epsilon :
         hprev = hi
-        sinusmphi = (z/(N2*(1-np.power(e,2))+h))
-        mphi = np.arctan((z+np.power(e,2)*N2*sinusmphi)/p)
+        sinusmphi = (vect.item(2)/(N2*(1-np.power(e,2))+hi))
+        mphi = np.arctan((vect.item(2)+np.power(e,2)*N2*sinusmphi)/p)
         N2 = a/(np.sqrt(1-np.power(e,2)*np.power(sinusmphi,2)))
         hi = (p/np.cos(mphi)) - N2
-    return (mlambda, mphi, hi)
+    matrice = np.matrix([[mlambda],[mphi],[hi]])
+    return matrice
 
-(lambda2, phi2, h)=transfo_xyz_ellipse(x1, y1, z1)
-print 'Lambda = ', lambda2
-print 'Phi = ', phi2
-print 'h = ', h
+print 'Lambda, Phi, h = \n', transfo_xyz_ellipse(vect_xyz)
+
 
 M = np.matrix([[-np.sin(lambda0), np.cos(lambda0), 0], \
  [-np.sin(phi0)*np.cos(lambda0), -np.sin(phi0)*np.sin(lambda0),  np.cos(phi0)], \
  [np.cos(phi0)*np.cos(lambda0), np.cos(phi0)*np.sin(lambda0), np.sin(phi0)]])
-print 'OK'
+#print 'OK'
 
-print 'Transfo 3 (Geocentrique => Local)'
+#print 'Transfo 3 (Geocentrique => Local)'
 #transfo 3
 def transfo_geo_local(x, y, z):
     Xl = M * np.matrix([[x-N0*np.cos(phi0)*np.cos(lambda0)], [y-N0*np.cos(phi0)*np.sin(lambda0)], [z-N0*(1-np.power(e,2))*np.sin(phi0)]])
     return Xl
 
-print transfo_geo_local(x2,y2,z2)
+#print transfo_geo_local(x2,y2,z2)
 
 #Transfo 4 local => Geocentrique
 def transfo_local_geo(Xl):
     return np.matrix([[N0*np.cos(phi0)*np.cos(lambda0)], [N0*np.cos(phi0)*np.sin(lambda0)], [N0*(1-np.power(e,2))*np.sin(phi0)]]) + M.T * Xl;
 
-print 'Xdepart :',np.matrix([[x2],[y2], [z2]])
-print 'Xfinal :',transfo_local_geo(transfo_geo_local(x2,y2,z2))
+#print 'Xdepart :',np.matrix([[x2],[y2], [z2]])
+#print 'Xfinal :',transfo_local_geo(transfo_geo_local(x2,y2,z2))
 
 print 'Question 2\n'
-(temp1, temp2, temp3)=transfo_xyz_ellipse(x2, y2, z2)
-print transfo_ellipse_xyz(temp1, temp2, temp3)
+vecteurxyz=transfo_xyz_ellipse(np.matrix([[x2], [y2], [z2]]))
+print 'lambda, phi, h = \n',vecteurxyz
+print 'x, y, z = \n', transfo_ellipse_xyz(vecteurxyz)
