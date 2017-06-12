@@ -33,7 +33,9 @@ Longitude_list = []
 Latitude_list = []
 Altitude_list = []
 matrice_list =[]
+nb_sat_list =[]
 for line in ser:
+    print line
     if bool_received == 0:
             print "Reception of Data ..."
             bool_received = 1
@@ -42,11 +44,16 @@ for line in ser:
         #'Y : ', split_list[0], 'M : ', split_list[1] ,'D : ', split_list[2],\
         if int(split_list[6]) < 10:
             split_list[6]='0'+split_list[6]
+        if int(split_list[5]) < 10:
+            split_list[5]='0'+split_list[5]
+        if int(split_list[4]) < 10:
+            split_list[4]='0'+split_list[4]
         time_list.append(split_list[4]+split_list[5]+split_list[6])
-        Longitude_list.append(split_list[10])
-        Latitude_list.append(split_list[11])
-        Altitude_list.append(split_list[13])
+        Longitude_list.append(float(split_list[10]))
+        Latitude_list.append(float(split_list[11]))
+        Altitude_list.append(float(split_list[13]))
         hdop_list.append(split_list[15])
+        nb_sat_list.append(split_list[8])
 
         #print split_list[4],'h',split_list[5],',',split_list[6], ' : ', \
         #'Nb Sat : ', split_list[8], '; Long : ', split_list[10], '; Lat : ', split_list[11],\
@@ -115,26 +122,49 @@ for i in range(1,len(Longitude_list)):
 meanX = np.mean(xl_list)
 meanY = np.mean(yl_list)
 meanZ = np.mean(zl_list)
+meanLong = np.mean(Longitude_list)
+meanLat = np. mean(Latitude_list)
+meanAlt = np.mean(Altitude_list)
 ecarTypeX = np.std(xl_list)
 ecarTypeY = np.std(yl_list)
 ecarTypeZ = np.std(zl_list)
 
+print "HDOP :", hdop_list
+print "NB Satellites :", nb_sat_list
+print "TIme list :",time_list
+print "Longitude moyenne", meanLong
+print "Latitude moyenne", meanLat
+print "Altitude moyenne", meanAlt
 print "X local: ", meanX
 print "Y local: ", meanY
 print "Z local: ", meanZ
 
 print "ecarTypeX :", ecarTypeX
-print "ecarTypeY s", ecarTypeY
-print "ecarTypeZ s", ecarTypeZ
+print "ecarTypeY :", ecarTypeY
+print "ecarTypeZ :", ecarTypeZ
 
+matrice_corrcoef = np.corrcoef(matrice_cov)
 matrice_cov=np.cov(matrice_cov)
 print "Matrice de covariance :\n",matrice_cov
+print "Coefficient de correlation :\n",matrice_corrcoef
 #print "Liste", matrice_list
 
 #plt.plot(time_list, Altitude_list)
+plt.title('x,y repere local')
+plt.xlabel('X local')
+plt.ylabel('Ylocal')
 plt.plot(xl_list, yl_list,'+')
 plt.show()
+plt.xlabel('Time')
+plt.ylabel('HDOP values')
+plt.title('HDOP')
 
+plt.plot(time_list, hdop_list)
+plt.show()
+plt.plot(time_list, nb_sat_list)
+plt.xlabel('Time')
+plt.ylabel('Nb_satellites')
+plt.show()
 #ser.write(b'hello')     # write a string
 
 #def
