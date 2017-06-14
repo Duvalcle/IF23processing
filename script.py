@@ -22,20 +22,24 @@ import scipy
 print("Traitement")
 ## Traitement Matlab
 #Parametres de l ellipse
-a = 6378137
+a = 6378137.0
 b = 6356752.314245179497563967
 f = 1/298.257223563
+#f = 1/298.257222101
 epsilon = 0.00001
 e = np.sqrt(2*f - np.power(f,2.0))
 
 #Donnees du TP question 1
-mylambda = (4*np.pi)/180
-phi = (20*np.pi)/180
-h = 200
+#mylambda = (4*np.pi)/180
+#phi = (20*np.pi)/180
+#h = 200
+mylambda = float((4+ 3.0/60)*np.pi/180)
+phi = float((48+ 18.0/60 + 22.0/3600)*np.pi/180)
+h = 105.557
 vect_ellipse = np.matrix([[mylambda], [phi], [h]])
 
-lambda0 = (4+ 20/60 + 20/3600)*np.pi/180
-phi0 = (4+ 20/60 + 20/3600)*np.pi/180
+lambda0 = (4+ 20.0/60 + 20.0/3600)*np.pi/180
+phi0 = (20+ 20.0/60 + 20.0/3600)*np.pi/180
 h0 = 0
 N0 = a/(np.sqrt(1-np.power(e,2)*np.power(np.sin(phi0),2)));
 
@@ -99,10 +103,9 @@ M = np.matrix([[-np.sin(lambda0), np.cos(lambda0), 0], \
 
 #print 'Transfo 3 (Geocentrique => Local)'
 #transfo 3
-def transfo_geo_local(x, y, z):
-    Xl = M * np.matrix([[x-N0*np.cos(phi0)*np.cos(lambda0)], [y-N0*np.cos(phi0)*np.sin(lambda0)], [z-N0*(1-np.power(e,2))*np.sin(phi0)]])
+def global2local(vect):
+    Xl = M * np.matrix([[vect.item(0)-N0*np.cos(phi0)*np.cos(lambda0)], [vect.item(1)-N0*np.cos(phi0)*np.sin(lambda0)], [vect.item(2)-N0*(1-np.power(e,2))*np.sin(phi0)]])
     return Xl
-
 #print transfo_geo_local(x2,y2,z2)
 
 #Transfo 4 local => Geocentrique
@@ -111,7 +114,7 @@ def transfo_local_geo(Xl):
 
 #print 'Xdepart :',np.matrix([[x2],[y2], [z2]])
 #print 'Xfinal :',transfo_local_geo(transfo_geo_local(x2,y2,z2))
-
+print 'RESULTAT :',global2local(vect_xyz)
 print 'Question 2\n'
 vecteurxyz=transfo_xyz_ellipse(np.matrix([[x2], [y2], [z2]]))
 print 'lambda, phi, h = \n',vecteurxyz
